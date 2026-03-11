@@ -1,0 +1,1 @@
+export { ReadyToTestPage } from './page'

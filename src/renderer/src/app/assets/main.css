@@ -1,0 +1,14 @@
+/* Подключаем ядро Tailwind v4 */
+@import "tailwindcss";
+
+/* Добавляем наши фирменные цвета (замена старому tailwind.config.js) */
+@theme {
+  --color-orzu: #238c00;
+}
+
+/* Немного базовых стилей, чтобы сбросить отступы у body */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
