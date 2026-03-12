@@ -9,22 +9,36 @@ export interface UserData {
 interface AuthStore {
   isAuthenticated: boolean
   username: string | null
+  userId: string | null 
   role: 'admin' | 'user' | null
-  users: UserData[] // <--- Список всех пользователей
+  users: UserData[]
   
-  login: (username: string, role: 'admin' | 'user') => void
+  login: (userData: UserData) => void
   logout: () => void
-  fetchUsers: () => Promise<void> // <--- Функция загрузки
+  fetchUsers: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: false,
   username: null,
+  userId: null,
   role: null,
   users: [],
 
-  login: (username, role) => set({ isAuthenticated: true, username, role }),
-  logout: () => set({ isAuthenticated: false, username: null, role: null, users: [] }),
+  login: (user) => set({ 
+    isAuthenticated: true, 
+    username: user.username, 
+    role: user.role, 
+    userId: user.id 
+  }),
+
+  logout: () => set({ 
+    isAuthenticated: false, 
+    username: null, 
+    userId: null, 
+    role: null, 
+    users: [] 
+  }),
 
   fetchUsers: async () => {
     try {
