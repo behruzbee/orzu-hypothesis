@@ -3,20 +3,20 @@ productName: OrzuHypothesis
 directories:
   output: dist
   buildResources: build
+
 files:
   - out/**/*
   - resources/**/*
   - package.json
-  # 1. ПРИНУДИТЕЛЬНО ВКЛЮЧАЕМ СКРЫТУЮ ПАПКУ PRISMA В СБОРКУ
-  - "node_modules/.prisma/**/*"
+  - node_modules/.prisma/client
+  - node_modules/@prisma/client
 
 extraResources:
   - ".env"
 
-# 2. ДОСТАЕМ PRISMA ИЗ АРХИВА, ЧТОБЫ ЕЁ ДВИЖКИ МОГЛИ РАБОТАТЬ
 asarUnpack:
-  - "node_modules/.prisma/**/*"
-  - "node_modules/@prisma/client/**/*"
+  - node_modules/.prisma/client
+  - node_modules/@prisma/client
 
 publish:
   provider: github
