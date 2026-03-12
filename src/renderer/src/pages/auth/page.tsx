@@ -49,7 +49,7 @@ export const AuthPage = () => {
             <Target size={32} />
           </div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Orzu Hypothesis</h1>
-          <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">PostgreSQL Edition</p>
+          <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Корпоративная платформа</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
