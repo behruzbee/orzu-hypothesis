@@ -15,15 +15,26 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  // 1. Сначала подключаем базу
   await connectDB()
 
+  // 2. Регистрируем IPC
   registerAuthHandlers()
   registerAdminHandlers()
   registerHypothesisHandlers()
 
+  // 3. Открываем окно
   createWindow()
 
-  autoUpdater.checkForUpdatesAndNotify()
+  // 4. АВТООБНОВЛЕНИЯ (Только для скомпилированной программы)
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify()
+
+    // Как только обновление скачалось в фоне - принудительно ставим его
+    autoUpdater.on('update-downloaded', () => {
+      autoUpdater.quitAndInstall()
+    })
+  }
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

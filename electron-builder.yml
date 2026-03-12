@@ -8,26 +8,33 @@ files:
   - resources/**/*
   - package.json
 
+# Прячем файл .env внутрь собранного приложения
 extraResources:
   - ".env"
 
+# Настройка публикации в GitHub для автообновлений
 publish:
   provider: github
 
+# WINDOWS
 win:
   executableName: hypothesis
   target:
-    - nsis-web # Сетевой установщик
+    - nsis-web
 
 nsisWeb:
-  artifactName: ${productName}-WebSetup.${ext} # Это будет файл на 2-5 МБ
+  artifactName: ${productName}-WebSetup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
   allowToChangeInstallationDirectory: false
 
-# Для Mac оставляем обычный DMG
+# MAC (Собираем сразу под Intel и под M1/M2/M3)
 mac:
   target:
-    - dmg
-  artifactName: ${productName}-${version}.${ext}
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  # В названии файла появится архитектура (например: OrzuHypothesis-1.0.4-arm64.dmg)
+  artifactName: ${productName}-${version}-${arch}.${ext}
