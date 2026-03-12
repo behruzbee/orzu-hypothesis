@@ -8,14 +8,16 @@ files:
   - resources/**/*
   - package.json
 
-# Указываем GitHub как место хранения файлов
+extraResources:
+  - ".env"
+
 publish:
   provider: github
 
 win:
   executableName: hypothesis
   target:
-    - nsis-web # ВОТ ОН: Сетевой установщик
+    - nsis-web # Сетевой установщик
 
 nsisWeb:
   artifactName: ${productName}-WebSetup.${ext} # Это будет файл на 2-5 МБ

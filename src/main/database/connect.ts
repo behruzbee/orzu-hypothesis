@@ -1,16 +1,18 @@
+import { app } from 'electron'
 import { PrismaClient } from '@prisma/client'
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
+
 import dotenv from 'dotenv'
+import path from 'path' // <--- Добавили path
 
-// 1. Загружаем переменные окружения из .env
-dotenv.config()
+const envPath = app.isPackaged 
+  ? path.join(process.resourcesPath, '.env') 
+  : path.resolve(process.cwd(), '.env')
 
-/**
- * Настройка подключения для Prisma 7
- * Мы используем драйвер 'pg' и официальный адаптер
- */
+dotenv.config({ path: envPath })
+
 const connectionString = process.env.DATABASE_URL
 
 if (!connectionString) {
