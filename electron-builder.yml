@@ -22,7 +22,7 @@ nsisWeb:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
-  allowToChangeInstallationDirectory: true
+  allowToChangeInstallationDirectory: false
 
 # Для Mac оставляем обычный DMG
 mac:

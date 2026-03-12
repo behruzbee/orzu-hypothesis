@@ -4,3 +4,9 @@ out
 .DS_Store
 .eslintcache
 *.log*
+node_modules/
+dist/
+out/
+.env
+.DS_Store
+*.log
