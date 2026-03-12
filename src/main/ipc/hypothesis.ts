@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron'
-import { prisma } from '../database/connect'
+import { db } from '../database/connect'
+import { hypothesesTable, progressHistoryTable } from '../database/schema'
 import { getSession } from '../session'
+import { eq } from 'drizzle-orm'
 
 export function registerHypothesisHandlers() {
   // ЧТЕНИЕ
@@ -9,78 +11,78 @@ export function registerHypothesisHandlers() {
     if (!currentUser) return []
     
     try {
-      const hypotheses = await prisma.hypothesis.findMany({
-        where: currentUser.role === 'admin' ? undefined : { authorId: currentUser.id },
-        include: { progressHistory: true } // ВАЖНО: Подтягиваем связанную таблицу замеров!
-      })
-      return hypotheses
+      let baseQuery = db.select().from(hypothesesTable)
+      if (currentUser.role !== 'admin') {
+        baseQuery = baseQuery.where(eq(hypothesesTable.authorId, currentUser.id)) as any
+      }
+      
+      const hypotheses = await baseQuery
+
+      const allHistory = await db.select().from(progressHistoryTable)
+      
+      const result = hypotheses.map(hyp => ({
+        ...hyp,
+        progressHistory: allHistory.filter(h => h.hypothesisId === hyp.id)
+      }))
+
+      return result
     } catch (error) {
       console.error('Ошибка чтения из БД:', error)
       return []
     }
   })
 
-  // СОЗДАНИЕ
   ipcMain.handle('db:createHypothesis', async (_, hypothesesArray: any[]) => {
     const currentUser = getSession()
     if (!currentUser) return { success: false, error: 'Не авторизован' }
 
     try {
-      // Prisma createMany для вставки массива
       const docs = hypothesesArray.map(h => ({
-        id: h.id, // сохраняем UUID с фронта
+        id: h.id, 
         title: h.title,
         status: h.status,
         createdAt: h.createdAt,
         authorId: currentUser.id
       }))
       
-      await prisma.hypothesis.createMany({ data: docs })
+      await db.insert(hypothesesTable).values(docs)
       return { success: true }
     } catch (error: any) {
       return { success: false, error: error.message }
     }
   })
 
-  // ОБНОВЛЕНИЕ (И ячеек таблицы, и истории замеров)
   ipcMain.handle('db:updateHypothesis', async (_, { id, updates }) => {
     const currentUser = getSession()
     if (!currentUser) return { success: false, error: 'Не авторизован' }
 
     try {
-      // Проверка прав (Юзер не может менять чужое)
       if (currentUser.role !== 'admin') {
-        const hyp = await prisma.hypothesis.findUnique({ where: { id } })
-        if (!hyp || hyp.authorId !== currentUser.id) {
+        const hyp = await db.select().from(hypothesesTable).where(eq(hypothesesTable.id, id)).limit(1)
+        if (!hyp[0] || hyp[0].authorId !== currentUser.id) {
           return { success: false, error: 'Нет прав доступа' }
         }
       }
 
-      // Отделяем историю замеров от обычных полей, так как в SQL это другая таблица
       const { progressHistory, ...mainFields } = updates
 
-      // 1. Обновляем основные поля гипотезы
       if (Object.keys(mainFields).length > 0) {
-        await prisma.hypothesis.update({
-          where: { id },
-          data: mainFields
-        })
+        await db.update(hypothesesTable)
+          .set(mainFields)
+          .where(eq(hypothesesTable.id, id))
       }
 
-      // 2. Умное обновление истории (если она пришла с фронта)
       if (progressHistory) {
-        // Проще всего удалить старую историю и записать новую, так как фронтенд всегда присылает полный массив
-        await prisma.progressRecord.deleteMany({ where: { hypothesisId: id } })
+        await db.delete(progressHistoryTable).where(eq(progressHistoryTable.hypothesisId, id))
         
         if (progressHistory.length > 0) {
-          await prisma.progressRecord.createMany({
-            data: progressHistory.map((record: any) => ({
-              id: record.id,
-              date: record.date,
-              value: record.value,
-              hypothesisId: id // Привязываем к гипотезе
-            }))
-          })
+          const newRecords = progressHistory.map((record: any) => ({
+            id: record.id,
+            date: record.date,
+            value: record.value,
+            hypothesisId: id
+          }))
+          await db.insert(progressHistoryTable).values(newRecords)
         }
       }
 

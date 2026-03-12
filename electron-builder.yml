@@ -3,20 +3,19 @@ productName: OrzuHypothesis
 directories:
   output: dist
   buildResources: build
-
 files:
   - out/**/*
   - resources/**/*
   - package.json
-  - node_modules/.prisma/client
-  - node_modules/@prisma/client
+  # БЕРЕМ НАШУ НОВУЮ ПАПКУ В СБОРКУ:
+  - prisma/generated/client/**/*
 
 extraResources:
   - ".env"
 
 asarUnpack:
-  - node_modules/.prisma/client
-  - node_modules/@prisma/client
+  # РАСПАКОВЫВАЕМ ЕЁ, ЧТОБЫ ДВИЖОК РАБОТАЛ НА MAC:
+  - prisma/generated/client/**/*
 
 publish:
   provider: github
