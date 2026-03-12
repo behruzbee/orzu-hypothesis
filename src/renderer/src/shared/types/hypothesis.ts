@@ -9,6 +9,12 @@ export enum HypothesisStatus {
 
 export type HypothesisPriority = 'low' | 'medium' | 'high'
 
+export interface ProgressRecord {
+  id: string
+  date: number
+  value: number
+}
+
 export interface Hypothesis {
   id: string
   title: string
@@ -27,4 +33,5 @@ export interface Hypothesis {
   actualPointB?: number;
   resultComment?: string; 
   priority?: HypothesisPriority
+  progressHistory?: ProgressRecord[] 
 }

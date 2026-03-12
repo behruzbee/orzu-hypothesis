@@ -21,6 +21,11 @@ interface HypothesisStore {
   addHypotheses: (dataArray: Omit<Hypothesis, 'id' | 'createdAt' | 'status'>[]) => Promise<void>
   updateStatus: (id: string, newStatus: Hypothesis['status']) => Promise<void>
   updateField: (id: string, field: keyof Hypothesis, value: any) => Promise<void>
+  addProgressRecord: (
+    hypothesisId: string,
+    record: { value: number; date: number }
+  ) => Promise<void>
+  removeProgressRecord: (hypothesisId: string, recordId: string) => Promise<void>
 
   startTest: (
     id: string,
@@ -41,7 +46,7 @@ interface HypothesisStore {
   ) => Promise<void>
 }
 
-export const useHypothesisStore = create<HypothesisStore>((set) => ({
+export const useHypothesisStore = create<HypothesisStore>((set, get) => ({
   hypotheses: [],
 
   searchQuery: '',
@@ -128,7 +133,6 @@ export const useHypothesisStore = create<HypothesisStore>((set) => ({
       }))
     }
   },
-
   // ПОДВЕСТИ ИТОГИ (Модалка)
   finishTest: async (id, actualPointB, comment, finalStatus) => {
     const updates = {
@@ -142,6 +146,53 @@ export const useHypothesisStore = create<HypothesisStore>((set) => ({
     if (res.success) {
       set((state) => ({
         hypotheses: state.hypotheses.map((h) => (h.id === id ? { ...h, ...updates } : h))
+      }))
+    }
+  },
+  addProgressRecord: async (hypothesisId, record) => {
+    const currentHypothesis = get().hypotheses.find((h) => h.id === hypothesisId)
+    if (!currentHypothesis) return
+
+    const newRecord = {
+      id: crypto.randomUUID(),
+      date: record.date,
+      value: record.value
+    }
+
+    // Сортируем историю по дате (от старых к новым), чтобы график и список выглядели правильно
+    const updatedHistory = [...(currentHypothesis.progressHistory || []), newRecord].sort(
+      (a, b) => a.date - b.date
+    )
+
+    const res = await (window as any).api.updateHypothesis({
+      id: hypothesisId,
+      updates: { progressHistory: updatedHistory }
+    })
+
+    if (res.success) {
+      set((state) => ({
+        hypotheses: state.hypotheses.map((h) =>
+          h.id === hypothesisId ? { ...h, progressHistory: updatedHistory } : h
+        )
+      }))
+    }
+  },
+  removeProgressRecord: async (hypothesisId, recordId) => {
+    const currentHypothesis = get().hypotheses.find((h) => h.id === hypothesisId)
+    if (!currentHypothesis || !currentHypothesis.progressHistory) return
+
+    const updatedHistory = currentHypothesis.progressHistory.filter((r) => r.id !== recordId)
+
+    const res = await (window as any).api.updateHypothesis({
+      id: hypothesisId,
+      updates: { progressHistory: updatedHistory }
+    })
+
+    if (res.success) {
+      set((state) => ({
+        hypotheses: state.hypotheses.map((h) =>
+          h.id === hypothesisId ? { ...h, progressHistory: updatedHistory } : h
+        )
       }))
     }
   }

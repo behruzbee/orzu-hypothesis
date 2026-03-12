@@ -1,8 +1,10 @@
-import { useMemo } from 'react'
+// @renderer/widgets/hypothesis-table/ui/hypothesis-table.tsx
+import { useState, useMemo } from 'react'
 import { Table } from '@renderer/shared/ui/table'
 import { useHypothesisStore } from '@renderer/shared/store/use-hypothesis-store'
 import { EmptyState } from '@renderer/shared/ui/empty-state'
-import { HypothesisStatus } from '@renderer/shared/types/hypothesis'
+import { HypothesisStatus, Hypothesis } from '@renderer/shared/types/hypothesis'
+import { HypothesisDetailModal } from './hypothesis-detail-modal' // ИМПОРТИРУЕМ МОДАЛКУ
 
 interface HypothesisTableProps {
   status: HypothesisStatus
@@ -11,6 +13,8 @@ interface HypothesisTableProps {
 
 export const HypothesisTable = ({ status, columns }: HypothesisTableProps) => {
   const { hypotheses, searchQuery, filterAssignee, sortBy, updateField } = useHypothesisStore()
+  
+  const [selectedHypothesis, setSelectedHypothesis] = useState<Hypothesis | null>(null)
 
   const processedHypotheses = useMemo(() => {
     let result = hypotheses.filter((h) => {
@@ -37,10 +41,18 @@ export const HypothesisTable = ({ status, columns }: HypothesisTableProps) => {
   }
 
   return (
-    <Table
-      columns={columns}
-      data={processedHypotheses}
-      updateData={(rowId, columnId, value) => updateField(rowId, columnId as any, value)}
-    />
+    <>
+      <Table
+        columns={columns}
+        data={processedHypotheses}
+        updateData={(rowId, columnId, value) => updateField(rowId, columnId as any, value)}
+        onRowClick={(row) => setSelectedHypothesis(row)} 
+      />
+      
+      <HypothesisDetailModal 
+        hypothesis={selectedHypothesis} 
+        onClose={() => setSelectedHypothesis(null)} 
+      />
+    </>
   )
 }
