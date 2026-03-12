@@ -1,62 +1,89 @@
 import { ipcMain } from 'electron'
-import { HypothesisModel } from '../database/models/Hypothesis'
+import { prisma } from '../database/connect'
 import { getSession } from '../session'
 
 export function registerHypothesisHandlers() {
+  // ЧТЕНИЕ
   ipcMain.handle('db:read', async () => {
     const currentUser = getSession()
     if (!currentUser) return []
     
     try {
-      let data
-      if (currentUser.role === 'admin') {
-        data = await HypothesisModel.find({})
-      } else {
-        data = await HypothesisModel.find({ authorId: currentUser._id })
-      }
-
-      return data.map(doc => {
-        const obj = doc.toObject() as any
-        delete obj._id
-        delete obj.__v
-        return obj
+      const hypotheses = await prisma.hypothesis.findMany({
+        where: currentUser.role === 'admin' ? undefined : { authorId: currentUser.id },
+        include: { progressHistory: true } // ВАЖНО: Подтягиваем связанную таблицу замеров!
       })
+      return hypotheses
     } catch (error) {
       console.error('Ошибка чтения из БД:', error)
       return []
     }
   })
 
+  // СОЗДАНИЕ
   ipcMain.handle('db:createHypothesis', async (_, hypothesesArray: any[]) => {
     const currentUser = getSession()
     if (!currentUser) return { success: false, error: 'Не авторизован' }
 
     try {
+      // Prisma createMany для вставки массива
       const docs = hypothesesArray.map(h => ({
-        ...h,
-        authorId: currentUser._id
+        id: h.id, // сохраняем UUID с фронта
+        title: h.title,
+        status: h.status,
+        createdAt: h.createdAt,
+        authorId: currentUser.id
       }))
-      await HypothesisModel.insertMany(docs)
+      
+      await prisma.hypothesis.createMany({ data: docs })
       return { success: true }
     } catch (error: any) {
       return { success: false, error: error.message }
     }
   })
 
+  // ОБНОВЛЕНИЕ (И ячеек таблицы, и истории замеров)
   ipcMain.handle('db:updateHypothesis', async (_, { id, updates }) => {
     const currentUser = getSession()
     if (!currentUser) return { success: false, error: 'Не авторизован' }
 
     try {
-      const filter: any = { id }
+      // Проверка прав (Юзер не может менять чужое)
       if (currentUser.role !== 'admin') {
-        filter.authorId = currentUser._id
+        const hyp = await prisma.hypothesis.findUnique({ where: { id } })
+        if (!hyp || hyp.authorId !== currentUser.id) {
+          return { success: false, error: 'Нет прав доступа' }
+        }
       }
 
-      const result = await HypothesisModel.updateOne(filter, { $set: updates })
-      if (result.modifiedCount === 0 && result.matchedCount === 0) {
-        return { success: false, error: 'Гипотеза не найдена или нет прав доступа' }
+      // Отделяем историю замеров от обычных полей, так как в SQL это другая таблица
+      const { progressHistory, ...mainFields } = updates
+
+      // 1. Обновляем основные поля гипотезы
+      if (Object.keys(mainFields).length > 0) {
+        await prisma.hypothesis.update({
+          where: { id },
+          data: mainFields
+        })
       }
+
+      // 2. Умное обновление истории (если она пришла с фронта)
+      if (progressHistory) {
+        // Проще всего удалить старую историю и записать новую, так как фронтенд всегда присылает полный массив
+        await prisma.progressRecord.deleteMany({ where: { hypothesisId: id } })
+        
+        if (progressHistory.length > 0) {
+          await prisma.progressRecord.createMany({
+            data: progressHistory.map((record: any) => ({
+              id: record.id,
+              date: record.date,
+              value: record.value,
+              hypothesisId: id // Привязываем к гипотезе
+            }))
+          })
+        }
+      }
+
       return { success: true }
     } catch (error: any) {
       return { success: false, error: error.message }

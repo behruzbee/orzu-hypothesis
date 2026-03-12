@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import bcrypt from 'bcryptjs'
-import { User } from '../database/models/User'
+import { prisma } from '../database/connect'
 import { getSession } from '../session'
 
 export function registerAdminHandlers() {
@@ -9,11 +9,13 @@ export function registerAdminHandlers() {
     if (!currentUser || currentUser.role !== 'admin') return { success: false, error: 'Нет прав' }
     
     try {
-      const existing = await User.findOne({ username })
+      const existing = await prisma.user.findUnique({ where: { username } })
       if (existing) return { success: false, error: 'Имя уже занято' }
 
       const hashedPassword = await bcrypt.hash(password, 10)
-      await User.create({ username, password: hashedPassword, role: role || 'user' })
+      await prisma.user.create({
+        data: { username, password: hashedPassword, role: role || 'user' }
+      })
       return { success: true }
     } catch (error: any) {
       return { success: false, error: error.message }
@@ -22,13 +24,10 @@ export function registerAdminHandlers() {
 
   ipcMain.handle('admin:getUsers', async () => {
     try {
-      const users = await User.find({}).select('-password')
-      const formattedUsers = users.map(u => ({
-        id: u._id.toString(),
-        username: u.username,
-        role: u.role
-      }))
-      return { success: true, users: formattedUsers }
+      const users = await prisma.user.findMany({
+        select: { id: true, username: true, role: true } // select заменяет '-password' из mongoose
+      })
+      return { success: true, users }
     } catch (error: any) {
       return { success: false, error: error.message }
     }

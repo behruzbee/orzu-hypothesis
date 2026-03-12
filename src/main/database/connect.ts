@@ -1,22 +1,41 @@
-import mongoose from 'mongoose'
+import { PrismaClient } from '@prisma/client'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
-import { User } from './models/User'
+import dotenv from 'dotenv'
 
-// В идеале вынести в .env, но пока оставим так
-const MONGODB_URI = "mongodb+srv://behruzbaxtiyorovdev_db_user:Zvc0TJG7XQDpCL1v@cluster0.08ig0qj.mongodb.net/orzu_tracker?appName=Cluster0"
+dotenv.config()
+
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false } 
+})
+
+const adapter = new PrismaPg(pool as any)
+
+export const prisma = new PrismaClient({ adapter })
 
 export const connectDB = async () => {
   try {
-    await mongoose.connect(MONGODB_URI)
-    console.log('✅ Успешно подключено к MongoDB Cloud')
+    await prisma.$connect()
+    console.log('✅ PostgreSQL подключен через Prisma 7 Adapter')
 
-    const adminExists = await User.findOne({ role: 'admin' })
+    const adminExists = await prisma.user.findFirst({
+      where: { role: 'admin' }
+    })
+
     if (!adminExists) {
       const hashedPassword = await bcrypt.hash('admin123', 10)
-      await User.create({ username: 'admin', password: hashedPassword, role: 'admin' })
-      console.log('👑 Создан первый админ! Логин: admin | Пароль: admin123')
+      await prisma.user.create({
+        data: {
+          username: 'admin',
+          password: hashedPassword,
+          role: 'admin'
+        }
+      })
+      console.log('👑 Админ создан в Postgres!')
     }
   } catch (error) {
-    console.error('❌ Ошибка подключения к MongoDB:', error)
+    console.error('❌ Ошибка подключения:', error)
   }
 }

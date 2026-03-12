@@ -10,3 +10,5 @@ out/
 .env
 .DS_Store
 *.log
+
+/src/generated/prisma
