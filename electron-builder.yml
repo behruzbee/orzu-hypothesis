@@ -7,15 +7,10 @@ files:
   - out/**/*
   - resources/**/*
   - package.json
-  # БЕРЕМ НАШУ НОВУЮ ПАПКУ В СБОРКУ:
-  - prisma/generated/client/**/*
 
+# Оставляем только проброс .env файла
 extraResources:
   - ".env"
-
-asarUnpack:
-  # РАСПАКОВЫВАЕМ ЕЁ, ЧТОБЫ ДВИЖОК РАБОТАЛ НА MAC:
-  - prisma/generated/client/**/*
 
 publish:
   provider: github

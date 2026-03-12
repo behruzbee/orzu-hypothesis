@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Позволяет запустить сборку вручную кнопкой
+  workflow_dispatch:
 
 jobs:
   build:
@@ -29,10 +29,10 @@ jobs:
         run: npm install
 
       - name: Create Env File
+        shell: bash # ВАЖНО для правильной кодировки на Windows
         run: echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
 
-      - name: Generate Prisma Client
-        run: npx prisma generate
+      # Шаг с Prisma удален! Drizzle этого не требует.
 
       - name: Build App
         run: npm run build
