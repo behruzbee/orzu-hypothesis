@@ -2,14 +2,18 @@ name: Build and Release
 on:
   push:
     branches:
-      - main # Сборка будет запускаться при каждом пуше в ветку main
+      - main
+  workflow_dispatch: # Позволяет запустить сборку вручную кнопкой
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest] # Собираем сразу для Win и Mac
+        os: [windows-latest, macos-latest]
+
+    permissions: 
+      contents: write
 
     steps:
       - name: Checkout Code
@@ -18,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24 
           cache: 'npm'
 
       - name: Install Dependencies
@@ -27,7 +31,7 @@ jobs:
       - name: Build App
         run: npm run build
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Магия для публикации
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Release
         run: npx electron-builder --publish always

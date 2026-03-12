@@ -3,7 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-// Импортируем нашу базу данных и bcrypt для работы с паролями
+import { autoUpdater } from 'electron-updater'
 import bcrypt from 'bcryptjs'
 import { connectDB, User, HypothesisModel } from './db'
 
@@ -58,6 +58,8 @@ app.whenReady().then(async () => {
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  autoUpdater.checkForUpdatesAndNotify()
 })
 
 app.on('window-all-closed', () => {
@@ -133,38 +135,6 @@ ipcMain.handle('db:read', async () => {
   }
 })
 
-// Синхронизация (УМНОЕ СОХРАНЕНИЕ)
-// ipcMain.handle('db:sync', async (_, hypotheses: any[]) => {
-//   if (!currentUser) return false
-
-//   try {
-//     // Подготавливаем операции для массового обновления (чтобы не затереть чужие данные)
-//     const operations = hypotheses.map(h => ({
-//       updateOne: {
-//         filter: { id: h.id },
-//         update: { $set: { ...h, authorId: h.authorId || currentUser._id } },
-//         upsert: true // Если нет - создаст, если есть - обновит
-//       }
-//     }))
-
-//     if (operations.length > 0) {
-//       await HypothesisModel.bulkWrite(operations)
-//     }
-
-//     // Удаляем те гипотезы, которые были удалены в интерфейсе
-//     const currentIds = hypotheses.map(h => h.id)
-//     if (currentUser.role === 'admin') {
-//       await HypothesisModel.deleteMany({ id: { $nin: currentIds } })
-//     } else {
-//       await HypothesisModel.deleteMany({ authorId: currentUser._id, id: { $nin: currentIds } })
-//     }
-    
-//     return true
-//   } catch (error) {
-//     console.error('Ошибка синхронизации с БД:', error)
-//     return false
-//   }
-// })
 ipcMain.handle('admin:getUsers', async () => {
   if (!currentUser || currentUser.role !== 'admin') {
     return { success: false, error: 'Нет прав' }
