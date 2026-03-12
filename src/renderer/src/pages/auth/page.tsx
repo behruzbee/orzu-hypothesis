@@ -38,7 +38,7 @@ export const AuthPage = () => {
           <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center text-orzu">
             <Target size={32} />
           </div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Orzu Tracker</h1>
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Orzu Hypothesis</h1>
           <p className="text-sm text-slate-400 font-bold">Корпоративная система</p>
         </div>
 
